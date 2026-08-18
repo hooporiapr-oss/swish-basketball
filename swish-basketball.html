@@ -407,6 +407,7 @@ function startDrill(){
   if(repIsPlaying||repIsListening)return;
   try{ if(!document.fullscreenElement && document.documentElement.requestFullscreen){ document.documentElement.requestFullscreen().catch(function(){}); } }catch(e){}
   initAudio();
+  playWhistle();
   $('screen-intro').style.display='none';
   $('countdown').style.display='flex';
   var n=3;$('bigCount').textContent=n;
@@ -488,6 +489,50 @@ function playCongaRoll(){if(!audioCtx)return;var n=audioCtx.currentTime;[0,2,1,2
 function createTapParticles(el){var r=el.getBoundingClientRect();var cx=r.left+r.width/2,cy=r.top+r.height/3;for(var i=0;i<5;i++){var p=document.createElement('div');p.className='tap-particle';p.style.left=cx+'px';p.style.top=cy+'px';p.style.background=congaColors[Math.floor(Math.random()*congaColors.length)];var a=(i/5)*Math.PI*2;var d=35+Math.random()*25;p.style.setProperty('--tx',Math.cos(a)*d+'px');p.style.setProperty('--ty',Math.sin(a)*d+'px');p.style.animation='particleBurst 0.3s ease-out forwards';document.body.appendChild(p);setTimeout(function(x){x.remove()}.bind(null,p),300)}}
 function launchConfetti(){var colors=['#FFD700','#FF6B35','#FF1493','#00D9D9','#FF8C42','#32CD32'];for(var i=0;i<40;i++){var c=document.createElement('div');c.className='confetti';c.style.cssText='position:absolute;left:'+(20+Math.random()*60)+'%;top:-20px;background:'+colors[Math.floor(Math.random()*colors.length)]+';width:'+(5+Math.random()*7)+'px;height:'+(5+Math.random()*7)+'px;border-radius:'+(Math.random()>0.5?'50%':'2px')+';animation:confettiFall '+(1.5+Math.random()*1.5)+'s ease-out forwards;animation-delay:'+(Math.random()*0.3)+'s;opacity:0';confettiContainer.appendChild(c);setTimeout(function(x){x.remove()}.bind(null,c),3500)}}
 function vibrate(d){if(navigator.vibrate)navigator.vibrate(d)}
+// The jump-ball whistle — the game's own opening call, fired once,
+// right as the countdown begins, mirroring the buzzer that closes
+// things out on a miss. A real whistle's two signature features: a
+// sharp, harmonically rich tone (square wave, not the softer sines
+// used elsewhere in this game), and the rapid, small pitch wobble
+// caused by the pea rolling inside the chamber — built here as a
+// genuine low-frequency oscillator modulating the main tone's own
+// frequency, not just a fixed pitch. A thin layer of filtered breath
+// noise underneath rounds out the realism.
+function playWhistle(){
+  if(!audioCtx)return;
+  try{
+    if(audioCtx.state==='suspended')audioCtx.resume();
+    var n=audioCtx.currentTime;
+    var dur=0.35;
+
+    var o=audioCtx.createOscillator();var g=audioCtx.createGain();
+    o.type='square';
+    o.frequency.setValueAtTime(3100,n);
+    g.gain.setValueAtTime(0.001,n);
+    g.gain.linearRampToValueAtTime(0.32,n+0.015);
+    g.gain.setValueAtTime(0.32,n+dur-0.06);
+    g.gain.exponentialRampToValueAtTime(0.001,n+dur);
+
+    var lfo=audioCtx.createOscillator();var lfoGain=audioCtx.createGain();
+    lfo.type='sine';lfo.frequency.setValueAtTime(23,n);
+    lfoGain.gain.setValueAtTime(140,n);
+    lfo.connect(lfoGain);lfoGain.connect(o.frequency);
+
+    createNoiseBuffer();
+    if(noiseBuffer){
+      var ns=audioCtx.createBufferSource();var ng=audioCtx.createGain();var nf=audioCtx.createBiquadFilter();
+      ns.buffer=noiseBuffer;ns.loop=true;
+      nf.type='highpass';nf.frequency.value=2000;
+      ng.gain.setValueAtTime(0,n);ng.gain.linearRampToValueAtTime(0.06,n+0.02);ng.gain.exponentialRampToValueAtTime(0.001,n+dur);
+      ns.connect(nf);nf.connect(ng);ng.connect(audioCtx.destination);
+      ns.start(n);ns.stop(n+dur+0.05);
+    }
+
+    o.connect(g);g.connect(audioCtx.destination);
+    lfo.start(n);lfo.stop(n+dur+0.05);
+    o.start(n);o.stop(n+dur+0.05);
+  }catch(e){}
+}
 // The miss buzzer — the same signature horn sound Flash uses at its
 // own "time's up" moment, reused here rather than built fresh, since
 // a miss ending the run is that same kind of finality. Fires once,
