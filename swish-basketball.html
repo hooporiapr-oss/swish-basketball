@@ -271,7 +271,7 @@ function recordScoreToStandings(name,finalScore,made,attempts,avgMs,shots){
   return fetch(SB_URL+'/rest/v1/'+SB_TABLE,{
     method:'POST',
     headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
-    body:JSON.stringify({player_name:name,score:finalScore,made:made,attempts:attempts,avg_ms:avgMs,shots:shots||[]})
+    body:JSON.stringify({player_name:name,score:finalScore,made:made,attempts:attempts,avg_ms:avgMs,shots:shots||[],school_name:sessionStorage.getItem('swish-basketball-school')||null})
   }).catch(function(){});
 }
 
