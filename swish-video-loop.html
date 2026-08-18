@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+if (sessionStorage.getItem('hoop-gate-pass') !== '1') {
+  window.location.replace('index.html');
+}
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SHOOT | Visual Training Loop</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;width:100%;background:#000;overflow:hidden}
+body{font-family:Arial,sans-serif;color:#fff}
+#stage{
+  position:fixed;inset:0;width:100vw;height:100vh;background:#000;
+}
+video{width:100%;height:100%;object-fit:cover;display:block}
+#hud{
+  position:absolute;top:16px;left:16px;right:16px;z-index:5;
+  display:flex;justify-content:space-between;align-items:center;
+  font-weight:800;font-size:.85rem;letter-spacing:.04em;
+  text-shadow:0 2px 8px rgba(0,0,0,.8);
+}
+#repCount span{color:#f37418}
+#backBtn,#replayBtn{
+  position:fixed;top:16px;z-index:20;
+  padding:10px 18px;border-radius:10px;border:1px solid rgba(255,255,255,.28);
+  background:rgba(0,0,0,.65);color:#fff;font-size:.8rem;font-weight:800;
+  letter-spacing:.03em;cursor:pointer;text-decoration:none;
+  box-shadow:0 0 14px rgba(0,0,0,.45);
+}
+#backBtn{left:16px}
+#replayBtn{right:16px}
+#startOverlay{
+  position:absolute;inset:0;z-index:15;display:flex;align-items:center;justify-content:center;
+  background:rgba(5,1,0,.75);
+}
+#startOverlay.hidden{display:none}
+#startBtn{
+  padding:20px 44px;border-radius:999px;border:none;
+  background:linear-gradient(135deg,#f37418,#ff9b50);color:#1a0900;
+  font-weight:900;font-size:1.1rem;letter-spacing:.03em;cursor:pointer;
+  box-shadow:0 0 40px rgba(243,116,24,.5);
+}
+#doneOverlay{
+  position:absolute;inset:0;z-index:10;display:none;align-items:center;justify-content:center;
+  flex-direction:column;gap:16px;background:rgba(5,1,0,.88);text-align:center;padding:24px;
+}
+#doneOverlay.show{display:flex}
+#doneOverlay h2{font-size:1.4rem}
+#doneOverlay p{color:#c9b8a8;font-size:.9rem;max-width:320px}
+#restartBtn{
+  margin-top:8px;padding:12px 28px;border-radius:999px;border:none;
+  background:linear-gradient(135deg,#f37418,#ff9b50);color:#1a0900;
+  font-weight:900;font-size:.9rem;cursor:pointer;
+}
+#missingNote{
+  position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:10px;text-align:center;padding:32px;color:#c9b8a8;font-size:.9rem;
+}
+</style>
+</head>
+<body>
+
+<a id="backBtn" href="hooporia-lab.html">← BACK</a>
+<button id="replayBtn" type="button">↺ REPLAY</button>
+
+<div id="stage">
+  <div id="hud">
+    <div id="repCount">Rep <span id="repNow">1</span> / <span id="repTotal">3</span></div>
+    <div id="modeLabel">SHOOT · Visual Training</div>
+  </div>
+
+  <video id="trainingVideo" playsinline muted>
+    <source src="shoot-swish-30.mp4" type="video/mp4">
+  </video>
+
+  <div id="missingNote" style="display:none">
+    <div style="font-size:2rem">🏀</div>
+    <div><strong>No video loaded yet</strong></div>
+    <div>Drop your generated clip in this same folder, named <code>shoot-swish-30.mp4</code>, and reload this page.</div>
+  </div>
+
+  <div id="startOverlay">
+    <button id="startBtn" type="button">▶ PLAY</button>
+  </div>
+
+  <div id="doneOverlay">
+    <h2>3 reps complete</h2>
+    <p>That's one full visualization set. Run it again, or step away and come back for another round later.</p>
+    <button id="restartBtn" type="button">↺ Run 3 More</button>
+  </div>
+</div>
+
+<script>
+var video=document.getElementById("trainingVideo");
+var repNow=document.getElementById("repNow");
+var doneOverlay=document.getElementById("doneOverlay");
+var restartBtn=document.getElementById("restartBtn");
+var replayBtn=document.getElementById("replayBtn");
+var missingNote=document.getElementById("missingNote");
+var startOverlay=document.getElementById("startOverlay");
+var startBtn=document.getElementById("startBtn");
+
+var TOTAL_REPS=3;
+var currentRep=1;
+
+function requestFullscreenOnce(){
+  var root=document.documentElement;
+  var requestFull=root.requestFullscreen||root.mozRequestFullScreen||root.webkitRequestFullscreen;
+  if(requestFull){
+    try{
+      var result=requestFull.call(root);
+      if(result&&typeof result.catch==="function"){result.catch(function(){});}
+    }catch(err){}
+  }
+}
+
+function startSet(){
+  startOverlay.className="hidden";
+  currentRep=1;
+  repNow.textContent=currentRep;
+  doneOverlay.className="";
+  video.currentTime=0;
+  video.play().catch(function(){});
+  requestFullscreenOnce();
+}
+
+video.addEventListener("ended",function(){
+  if(currentRep<TOTAL_REPS){
+    currentRep++;
+    repNow.textContent=currentRep;
+    video.currentTime=0;
+    video.play().catch(function(){});
+  }else{
+    doneOverlay.className="show";
+  }
+});
+
+video.addEventListener("error",function(){
+  missingNote.style.display="flex";
+  video.style.display="none";
+});
+
+setTimeout(function(){
+  if(video.networkState===3||video.error){
+    missingNote.style.display="flex";
+    video.style.display="none";
+  }
+},1200);
+
+startBtn.addEventListener("click",startSet);
+restartBtn.addEventListener("click",startSet);
+replayBtn.addEventListener("click",startSet);
+</script>
+
+</body>
+</html>
