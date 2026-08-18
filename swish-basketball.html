@@ -488,6 +488,37 @@ function playCongaRoll(){if(!audioCtx)return;var n=audioCtx.currentTime;[0,2,1,2
 function createTapParticles(el){var r=el.getBoundingClientRect();var cx=r.left+r.width/2,cy=r.top+r.height/3;for(var i=0;i<5;i++){var p=document.createElement('div');p.className='tap-particle';p.style.left=cx+'px';p.style.top=cy+'px';p.style.background=congaColors[Math.floor(Math.random()*congaColors.length)];var a=(i/5)*Math.PI*2;var d=35+Math.random()*25;p.style.setProperty('--tx',Math.cos(a)*d+'px');p.style.setProperty('--ty',Math.sin(a)*d+'px');p.style.animation='particleBurst 0.3s ease-out forwards';document.body.appendChild(p);setTimeout(function(x){x.remove()}.bind(null,p),300)}}
 function launchConfetti(){var colors=['#FFD700','#FF6B35','#FF1493','#00D9D9','#FF8C42','#32CD32'];for(var i=0;i<40;i++){var c=document.createElement('div');c.className='confetti';c.style.cssText='position:absolute;left:'+(20+Math.random()*60)+'%;top:-20px;background:'+colors[Math.floor(Math.random()*colors.length)]+';width:'+(5+Math.random()*7)+'px;height:'+(5+Math.random()*7)+'px;border-radius:'+(Math.random()>0.5?'50%':'2px')+';animation:confettiFall '+(1.5+Math.random()*1.5)+'s ease-out forwards;animation-delay:'+(Math.random()*0.3)+'s;opacity:0';confettiContainer.appendChild(c);setTimeout(function(x){x.remove()}.bind(null,c),3500)}}
 function vibrate(d){if(navigator.vibrate)navigator.vibrate(d)}
+// The miss buzzer — the same signature horn sound Flash uses at its
+// own "time's up" moment, reused here rather than built fresh, since
+// a miss ending the run is that same kind of finality. Fires once,
+// right as the scoreboard itself opens (not at the instant of the
+// miss, which already has its own distinct "wrong" tone) — two
+// separate beats, not one sound piled on another.
+function playBuzzer(){
+  if(!audioCtx)return;
+  try{
+    if(audioCtx.state==='suspended')audioCtx.resume();
+    var o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.type='sawtooth';
+    o.frequency.setValueAtTime(220,audioCtx.currentTime);
+    g.gain.setValueAtTime(0.001,audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.55,audioCtx.currentTime+0.05);
+    g.gain.setValueAtTime(0.55,audioCtx.currentTime+1.1);
+    g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+1.4);
+    o.connect(g);g.connect(audioCtx.destination);
+    o.start();o.stop(audioCtx.currentTime+1.45);
+
+    var o2=audioCtx.createOscillator(),g2=audioCtx.createGain();
+    o2.type='square';
+    o2.frequency.setValueAtTime(221,audioCtx.currentTime);
+    g2.gain.setValueAtTime(0.001,audioCtx.currentTime);
+    g2.gain.exponentialRampToValueAtTime(0.28,audioCtx.currentTime+0.05);
+    g2.gain.setValueAtTime(0.28,audioCtx.currentTime+1.1);
+    g2.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+1.4);
+    o2.connect(g2);g2.connect(audioCtx.destination);
+    o2.start();o2.stop(audioCtx.currentTime+1.45);
+  }catch(e){}
+}
 
 var repSequence=[];
 var repPlayerIndex=0;
@@ -608,6 +639,7 @@ function repEndGame(){
   setTimeout(function(){
     $('court').style.display='none';
     $('hud').style.display='none';
+    playBuzzer();
     $('screen-end').style.display='flex';
   },500);
 }
