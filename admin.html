@@ -116,7 +116,6 @@
       <button class="prod-tab active" id="tab-hooporia" onclick="switchProduct('hooporia')">🏀 Memory Basketball</button>
       <button class="prod-tab" id="tab-mobile" onclick="switchProduct('mobile')">📱 Mobile</button>
       <button class="prod-tab" id="tab-dynamic-basketball" onclick="switchProduct('dynamic-basketball')">🥽 Dynamic Basketball</button>
-      <button class="prod-tab" id="tab-the-handle" onclick="switchProduct('the-handle')">🧠 The Handle</button>
       <button class="prod-tab" id="tab-swish-basketball" onclick="switchProduct('swish-basketball')">🎯 Swish Basketball</button>
     </div>
 
@@ -269,10 +268,9 @@ window.switchProduct = function(product){
   $('tab-hooporia').className = 'prod-tab' + (product==='hooporia' ? ' active' : '');
   $('tab-mobile').className = 'prod-tab' + (product==='mobile' ? ' active' : '');
   $('tab-dynamic-basketball').className = 'prod-tab' + (product==='dynamic-basketball' ? ' active' : '');
-  $('tab-the-handle').className = 'prod-tab' + (product==='the-handle' ? ' active' : '');
   $('tab-swish-basketball').className = 'prod-tab' + (product==='swish-basketball' ? ' active' : '');
   $('mobile-note').className = 'mobile-note' + (product==='mobile' ? ' show' : '');
-  var label = product==='hooporia' ? '(Memory Basketball)' : product==='mobile' ? '(Mobile)' : product==='the-handle' ? '(The Handle)' : product==='swish-basketball' ? '(Swish Basketball)' : '(Dynamic Basketball)';
+  var label = product==='hooporia' ? '(Memory Basketball)' : product==='mobile' ? '(Mobile)' : product==='swish-basketball' ? '(Swish Basketball)' : '(Dynamic Basketball)';
   $('add-product-label').textContent = label;
   $('list-product-label').textContent = label;
   loadLicenses();
@@ -288,9 +286,6 @@ var STANDINGS_BY_PRODUCT = {
   'dynamic-basketball': [
     { name: 'Shoot It. Own It.', table: 'vr_shoot_it_own_it_standings' },
     { name: 'Make It Count.', table: 'vr_make_it_count_standings' }
-  ],
-  'the-handle': [
-    { name: 'The Handle', table: 'vr_the_handle_standings' }
   ],
   'swish-basketball': [
     { name: 'Swish Basketball', table: 'vr_swish_basketball_standings' }
