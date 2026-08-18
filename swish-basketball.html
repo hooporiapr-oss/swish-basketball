@@ -175,24 +175,8 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
   <a class="intro-back" href="index.html">← Exit</a>
   <input type="text" id="playerNameInputMain" class="name-input" maxlength="20" placeholder="Your name" autocomplete="off" style="max-width:420px;margin:16px auto 14px">
   <button class="big-btn" id="bigStart" data-i18n="start" onclick="handleStartClick()">▶ SWISH BASKETBALL</button>
-  <button class="box-open-btn" id="openBoxBtn" data-i18n="standingsBtn">🏆 THE STANDINGS</button>
   <div style="margin-top:24px;font-size:.68rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#4a5058">Powered by <a href="https://hooporia.com" target="_blank" rel="noopener" style="color:#8892a0;font-style:italic;text-decoration:underline">Gostar Digital</a></div>
 </div>
-
-<!-- THE STANDINGS -->
-<div id="screen-box">
-  <button class="box-back-btn" id="closeBoxBtn">← Back</button>
-  <div class="box-title">THE <span>STANDINGS</span></div>
-  <div class="box-sub">Swish · Player vs. Player</div>
-
-  <div style="width:100%;max-width:600px">
-    <div class="box-section">
-      <div class="box-section-label">Standings — Best Score Per Player</div>
-      <div class="box-table" id="standingsList" style="border-radius:12px"></div>
-      <div class="tap-log" id="standingsTapLog" style="display:none"></div>
-      </div>
-    </div>
-  </div>
 
 <!-- COUNTDOWN -->
 <div id="countdown"><div id="bigCount">3</div></div>
@@ -202,7 +186,6 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
   <div class="final-num" id="endNum">0</div>
   <div class="final-label">Total Score</div>
   <button class="next-player-btn" id="nextPlayerBtn">← Back</button>
-  <button class="box-open-btn" id="endStandingsBtn" style="margin-top:12px">🏆 THE STANDINGS</button>
 </div>
 
 <script>
@@ -292,98 +275,6 @@ function recordScoreToStandings(name,finalScore,made,attempts,avgMs,shots){
   }).catch(function(){});
 }
 
-function fetchStandings(){
-  var url=SB_URL+'/rest/v1/'+SB_TABLE+'?select=player_name,score,made,attempts,avg_ms,shots&order=score.desc';
-  return fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
-    .then(function(r){if(!r.ok)throw new Error('bad response');return r.json()})
-    .then(function(rows){
-      var best={};
-      (rows||[]).forEach(function(r){
-        var existing=best[r.player_name];
-        if(!existing||r.score>existing.pts){
-          best[r.player_name]={name:r.player_name,pts:r.score,made:r.made,attempts:r.attempts,ms:r.avg_ms,shots:r.shots||[]};
-        }
-      });
-      return Object.keys(best).map(function(n){return best[n]}).sort(function(a,b){return b.pts-a.pts});
-    });
-}
-
-function renderTapLog(container,shots,finalScore){
-  if(!shots||!shots.length){
-    container.innerHTML='<div class="tap-log-empty">No round-by-round detail saved for this game.</div>';
-    return;
-  }
-  var chips=shots.map(function(s){
-    if(s.hit){
-      return '<div class="tap-chip hit"><span class="tap-bpm">ROUND '+s.round+'</span><span class="tap-pts">+'+s.pts+'</span></div>';
-    }
-    return '<div class="tap-chip miss"><span class="tap-bpm">ROUND '+s.round+'</span><span class="tap-pts">MISS</span></div>';
-  }).join('');
-  container.innerHTML=chips+'<div class="tap-log-total">Final Score: <b>'+finalScore+' PTS</b></div>';
-}
-
-function renderStandings(){
-  var listEl=$('standingsList');
-  var tapLogEl=$('standingsTapLog');
-  tapLogEl.style.display='none';
-  listEl.innerHTML='<div class="box-empty">Loading standings…</div>';
-
-  fetchStandings().then(function(ranked){
-    var openRowName=null;
-    if(!ranked.length){
-      listEl.innerHTML='<div class="box-empty">No players yet — be the first name on the board.</div>';
-      return;
-    }
-    listEl.innerHTML=ranked.map(function(p,i){
-      var rankClass=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
-      var safeName=p.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-      return '<div class="standings-row '+rankClass+'" data-name="'+safeName+'">'
-        +'<span class="standings-rank">'+(i+1)+'</span>'
-        +'<span class="standings-name">'+safeName+'</span>'
-        +'<span class="standings-bpm">'+(p.made>0?p.made+' rounds':'')+'</span>'
-        +'<span class="standings-pts">'+p.pts+'</span>'
-        +'</div>';
-    }).join('');
-    listEl.querySelectorAll('.standings-row').forEach(function(row){
-      row.addEventListener('click',function(){
-        var name=row.dataset.name;
-        if(openRowName===name){
-          tapLogEl.style.display='none';
-          openRowName=null;
-          return;
-        }
-        openRowName=name;
-        var p=ranked.find(function(r){return r.name===name});
-        renderTapLog(tapLogEl,p.shots,p.pts);
-        tapLogEl.style.display='flex';
-        row.insertAdjacentElement('afterend',tapLogEl);
-      });
-    });
-  }).catch(function(){
-    listEl.innerHTML='<div class="box-empty">Couldn\'t reach the standings — check the connection. <span id="standingsRetryBtn" style="color:#7c3aed;text-decoration:underline;cursor:pointer">Try again</span></div>';
-    var retryBtn=document.getElementById('standingsRetryBtn');
-    if(retryBtn)retryBtn.addEventListener('click',function(){renderStandings()});
-  });
-}
-
-var standingsReturnScreen='screen-intro';
-
-$('openBoxBtn').onclick=function(){
-  standingsReturnScreen='screen-intro';
-  renderStandings();
-  $('screen-intro').style.display='none';
-  $('screen-box').style.display='flex';
-};
-$('endStandingsBtn').onclick=function(){
-  standingsReturnScreen='screen-end';
-  renderStandings();
-  $('screen-end').style.display='none';
-  $('screen-box').style.display='flex';
-};
-$('closeBoxBtn').onclick=function(){
-  $('screen-box').style.display='none';
-  $(standingsReturnScreen).style.display='flex';
-};
 
 
 (function(){
