@@ -135,6 +135,17 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
 
 .final-num{font-size:6rem;font-weight:900;color:#7c3aed;line-height:1;text-shadow:0 0 60px rgba(124,58,237,.9)}
 .final-label{font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:#9fb3c8;margin-top:10px}
+.final-possessions{font-size:.85rem;color:#7c3aed;font-weight:900;margin-top:14px;letter-spacing:.04em}
+
+.points-popup{position:fixed;z-index:60;pointer-events:none;font-weight:900;font-family:Arial,sans-serif;text-shadow:0 2px 8px rgba(0,0,0,.6);animation:pointsFloat .8s ease-out forwards}
+@keyframes pointsFloat{
+  0%{transform:translate(-50%,-50%) scale(.75);opacity:0}
+  18%{transform:translate(-50%,-75%) scale(1.15);opacity:1}
+  100%{transform:translate(-50%,-170%) scale(1);opacity:0}
+}
+.points-popup.tap{font-size:1.3rem;color:#00D9A5}
+.points-popup.bonus-count{font-size:2.6rem;color:#fff}
+.points-popup.bonus{font-size:1.9rem;color:#ffd35a;text-shadow:0 0 20px rgba(255,211,90,.8),0 2px 8px rgba(0,0,0,.6)}
 .final-bpm-big{font-size:1.8rem;font-weight:900;color:#ffd35a;margin-top:10px}
 .final-acc{margin-top:6px;font-size:1.1rem;color:#ffd35a;font-weight:900}
 .final-misses{margin-top:10px;font-size:1.3rem;font-weight:900;color:#FF1493;text-shadow:0 0 20px rgba(255,20,147,.5)}
@@ -161,7 +172,7 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
 
 <div id="hud" style="display:none">
   <div class="hud-box"><div class="hud-label">Score</div><div class="hud-val" id="hScore">0</div></div>
-  <div class="hud-box"><div class="hud-label">Round</div><div class="hud-val" id="hRound">--</div></div>
+  <div class="hud-box"><div class="hud-label">Possession</div><div class="hud-val" id="hRound">--</div></div>
   <div class="hud-box"><div class="hud-label">Best</div><div class="hud-val" id="hBest">0</div></div>
 </div>
 
@@ -184,7 +195,8 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
 <!-- END -->
 <div id="screen-end">
   <div class="final-num" id="endNum">0</div>
-  <div class="final-label">Total Score</div>
+  <div class="final-label">Total Points</div>
+  <div class="final-possessions" id="endPossessions"></div>
   <button class="next-player-btn" id="nextPlayerBtn">← Back</button>
 </div>
 
@@ -493,7 +505,7 @@ function repNextRound(){
     repSequence.push(Math.floor(Math.random()*drumCount));
   }
   repSequence=repSequence.concat(SWISH_SEQUENCE);
-  msg('🧠 ROUND '+repRound+' · WATCH...','watch');
+  msg('🧠 POSSESSION '+repRound+' · WATCH...','watch');
   setTimeout(function(){repPlaySequence(0)},repRound===1?1000:900);
 }
 
@@ -531,6 +543,32 @@ function repPlaySequence(idx,startTime){
   setTimeout(function(){repPlaySequence(idx+1,startTime)},delay);
 }
 
+// A small, floating "+2"/"+3" that appears right where the tap
+// landed (or centered on the court for the bonus) and drifts up
+// while fading — real-time proof of what that specific tap or
+// possession was actually worth, rather than just a running total
+// the player has to do their own math against.
+function showPointsPopup(targetEl,text,cls){
+  var r=targetEl.getBoundingClientRect?targetEl.getBoundingClientRect():{left:innerWidth/2,top:innerHeight/2,width:0,height:0};
+  var el=document.createElement('div');
+  el.className='points-popup '+(cls||'tap');
+  el.textContent=text;
+  el.style.left=(r.left+r.width/2)+'px';
+  el.style.top=(r.top+r.height/2)+'px';
+  document.body.appendChild(el);
+  setTimeout(function(){el.remove()},800);
+}
+// The possession-ending bonus gets its own, bigger moment — a quick
+// 1, 2, 3 count rides in on top of the swish animation/sound already
+// playing, landing on the actual +3 a beat later.
+function showBonusCountup(){
+  var courtEl=$('court');
+  ['1','2','3'].forEach(function(label,i){
+    setTimeout(function(){showPointsPopup(courtEl,label,'bonus-count')},i*150);
+  });
+  setTimeout(function(){showPointsPopup(courtEl,'+3 BONUS','bonus')},520);
+}
+
 function repHandleTap(ci){
   if(!repIsListening||repIsPlaying)return;
   var expected=repSequence[repPlayerIndex];
@@ -540,12 +578,24 @@ function repHandleTap(ci){
     createTapParticles(tapCongas[ci]);
     vibrate(15);
     setTimeout(function(){tapCongas[ci].classList.remove('lit')},150);
+
+    // Every correct tap is its own made 2-pointer — scored the
+    // instant it lands, not saved up and paid out in one lump sum
+    // once the whole possession finishes.
+    score+=2;
+    $('hScore').textContent=score;
+    showPointsPopup(tapCongas[ci],'+2','tap');
+
     repPlayerIndex++;
     if(repPlayerIndex>=repSequence.length){
       repIsListening=false;
       playSwishAnimation();
-      score+=repRound;$('hScore').textContent=score;
-      repShotLog.push({hit:true,round:repRound,pts:repRound});
+      // Finishing the possession clean adds a separate 3-point bonus
+      // on top of the 2-pointers already scored for each tap in it.
+      score+=3;
+      $('hScore').textContent=score;
+      showBonusCountup();
+      repShotLog.push({hit:true,round:repRound,pts:repRound*2+3});
       playCongaRoll();
       if(repRound>=3)launchConfetti();
       if(repRound>repBestRound){repBestRound=repRound;localStorage.setItem(BEST_ROUND_KEY,String(repBestRound));}
@@ -570,6 +620,7 @@ function repEndGame(){
   var completed=repRound-1;
   var finalScore=Math.max(0,score);
   $('endNum').textContent=finalScore;
+  $('endPossessions').textContent=completed+' Possession'+(completed===1?'':'s');
   if(completed>=3){playCongaRoll();launchConfetti();}
   recordScoreToStandings(currentPlayerName,finalScore,completed,repRound,0,repShotLog);
   setTimeout(function(){
