@@ -145,7 +145,7 @@ body.buzzer-shake{animation:buzzerShake .5s cubic-bezier(.36,.07,.19,.97) 2}
 }
 .points-popup.tap{font-size:1.3rem;color:#00D9A5}
 .points-popup.bonus-count{font-size:2.6rem;color:#fff}
-.points-popup.bonus{font-size:1.9rem;color:#ffd35a;text-shadow:0 0 20px rgba(255,211,90,.8),0 2px 8px rgba(0,0,0,.6)}
+.points-popup.bonus{font-size:1.5rem;color:#ffd35a;text-shadow:0 0 20px rgba(255,211,90,.8),0 2px 8px rgba(0,0,0,.6);white-space:nowrap}
 .final-bpm-big{font-size:1.8rem;font-weight:900;color:#ffd35a;margin-top:10px}
 .final-acc{margin-top:6px;font-size:1.1rem;color:#ffd35a;font-weight:900}
 .final-misses{margin-top:10px;font-size:1.3rem;font-weight:900;color:#FF1493;text-shadow:0 0 20px rgba(255,20,147,.5)}
@@ -566,7 +566,7 @@ function showBonusCountup(){
   ['1','2','3'].forEach(function(label,i){
     setTimeout(function(){showPointsPopup(courtEl,label,'bonus-count')},i*150);
   });
-  setTimeout(function(){showPointsPopup(courtEl,'+3 BONUS','bonus')},520);
+  setTimeout(function(){showPointsPopup(courtEl,'+3 POINT SHOT','bonus')},520);
 }
 
 function repHandleTap(ci){
